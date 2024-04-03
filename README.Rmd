@@ -1,0 +1,270 @@
+---
+output: 
+  github_document:
+    toc: TRUE
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Welcome to the ggtedious workshop!
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+Let's build a vanilla ggplot2 Stat and use it in an extension function.  
+
+# Part 1. Work on functionality
+
+## Step 0. Do it with base ggplot2 *can become problem statement later*
+
+```{r use_base_ggplot2}
+library(tidyverse)
+
+cars_means_df <- cars |>
+  summarise(dist = mean(dist),
+            speed = mean(speed))
+
+ggplot(data = cars) + 
+  aes(speed, dist) + 
+  geom_point() + 
+  geom_point(data = cars_means_df, size = 8)
+```
+
+## Step 0.b Write like-to-have code *code chunk option eval = F*
+
+```
+ggplot(data = cars) + 
+  aes(speed, dist) + 
+  geom_point() + 
+  geom_pointmeans(size = 8)
+```
+
+
+## Step 1. Write compute group function and test
+
+## Step 2. Pass to ggproto object
+
+reference: https://evamaerey.github.io/mytidytuesday/2022-01-03-easy-geom-recipes/easy_geom_recipes.html
+
+```{r compute_group_means}
+compute_group_means <- function(data, scales){
+  
+  data |>
+    summarise(x = mean(x),
+              y = mean(y))
+  
+}
+
+
+StatMeans <- ggproto(`_class` = "StatMeans",
+                     `_inherit` = Stat,
+                     compute_group = compute_group_means,
+                     required_aes = c("x", "y"))
+
+
+```
+
+```{r try_compute_group_post}
+cars |>
+  select(x = speed, y = dist) |>
+  compute_group_means()
+```
+
+```{r}
+ggplot(data = cars) + 
+  aes(speed, dist) + 
+  geom_point() + 
+  layer(stat = StatMeans, 
+        geom = GeomPoint, 
+        position = "identity",
+        params = list(size = 8)) 
+
+# defining params is not always required.
+# we just use it hear so that our means point is obvious
+```
+
+
+## Step 3. Write user-facing geom_pointmeans() function
+
+```{r geom_post}
+geom_pointmeans <- function(mapping = NULL, 
+                            data = NULL,
+                            position = "identity", 
+                            na.rm = FALSE,
+                            show.legend = NA,
+                            inherit.aes = TRUE, ...) {
+  ggplot2::layer(
+    stat = StatMeans,        # proto object from step 2
+    geom = ggplot2::GeomPoint,   # inherit other behavior
+    data = data, 
+    mapping = mapping,
+    position = position, 
+    show.legend = show.legend, 
+    inherit.aes = inherit.aes,
+    params = list(na.rm = na.rm, ...)
+  )
+}
+
+```
+
+
+## Step 4. Test it out enjoy! (possibly basis of examples and tests)
+
+```{r}
+ggplot(data = cars) + 
+  aes(speed, dist) + 
+  geom_point() + 
+  geom_pointmeans(size = 8)
+
+last_plot() + 
+  aes(color = dist > 50)
+```
+
+## Step 5. Write messages/warnings etc in the function
+
+# Part II. Packaging and documentation  🚧 ✅
+
+## Phase 1. Minimal working package
+
+### Bit A. Created package archetecture, running `devtools::create(".")` in interactive session. 🚧 ✅
+
+
+```{r, eval = F}
+devtools::create(".")
+```
+
+### Bit B. Added roxygen skeleton? 🚧 ✅
+
+Use a roxygen skeleton for auto documentation and making sure proposed functions are *exported*.  Generally, early on, I don't do much (anything) in terms of filling in the skeleton for documentation, because things may change.
+
+### Bit C. Managed dependencies ? 🚧 ✅
+
+Package dependencies managed, i.e. `depend::function()` in proposed functions and declared in the DESCRIPTION
+
+```{r, eval = F}
+usethis::use_package("ggplot2")
+```
+
+
+### Bit D. Moved functions R folder? 🚧 ✅
+
+Use new {readme2pkg} function to do this from readme...
+
+```{r, eval = F}
+library(tidyverse)
+readme2pkg::chunk_to_r("geom_post")
+```
+
+### Bit E. Run `devtools::check()` and addressed errors. 🚧 ✅
+
+```{r, eval = F}
+devtools::check(pkg = ".")
+```
+
+### Bit F. Build package 🚧 ✅
+
+```{r, eval = F}
+devtools::build()
+```
+
+
+### Bit G. Write traditional README that uses built package (also serves as a test of build. 🚧 ✅
+
+The goal of the {ggtedious} package is to make it easy to draw posts (and to learn about package building and testing)
+
+Install package with:
+
+```
+remotes::install_github("EvaMaeRey/ggvanilla")
+```
+
+Once functions are exported you can remove go to two colons, and when things are are really finalized, then go without colons (and rearrange your readme...)
+
+```{r, eval = F}
+library(ggvanilla)  
+
+
+```
+
+
+
+
+### Bit H. Chosen a license? 🚧 ✅
+
+
+```{r, eval = F}
+usethis::use_mit_license()
+```
+
+### Bit I. Add lifecycle badge (experimental) 🚧 ✅
+
+```{r, eval = F}
+usethis::use_lifecycle_badge("experimental")
+```
+
+
+## Phase 2: Listen & iterate 🚧 ✅
+
+Try to get feedback from experts on API, implementation, default decisions.  Is there already work that solves this problem? 
+
+
+## Phase 3: Let things settle
+
+### Bit A. Settle on examples.  Put them in the roxygen skeleton and readme. 🚧 ✅
+
+### Bit B. Written formal tests of functions and save to test that folders 🚧 ✅
+
+
+That would look like this...
+
+```{r test_calc_times_two_works, eval = F}
+library(testthat)
+
+test_that("calc times 2 works", {
+  expect_equal(times_two(4), 8)
+  expect_equal(times_two(5), 10)
+  
+})
+```
+
+
+```{r, eval = F}
+readme2pkg::chunk_to_tests_testthat("test_calc_times_two_works")
+```
+
+
+### Bit C. Added a description and author information in the DESCRIPTION file 🚧 ✅
+
+### Bit D. Addressed *all* notes, warnings and errors. 🚧 
+
+## Phase 4. Promote to wider audience...
+
+### Bit A. Package website built?  ✅
+
+```{r, eval = F}
+usethis::use_pkgdown()
+pkgdown::build_site()
+```
+
+
+### Bit B. Package website deployed? 🚧 ✅
+
+## Phase 5: Harden/commit
+
+### Submit to CRAN/RUniverse? 🚧 
+
+# Appendix: Reports, Environment
+
+## Edited Description file?
+
+```{r, eval = F}
+readLines("DESCRIPTION")
+```
+
