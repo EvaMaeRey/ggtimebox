@@ -6,7 +6,7 @@ compute_panel_timebox <- function(data, scales, break_time = 3, start_hour = 9){
     dplyr::mutate(full_time = .data$minutes + break_time) |>
     dplyr::mutate(end_time_minutes = cumsum(.data$full_time)) |>
     dplyr::mutate(start_time_minutes = lag(.data$end_time_minutes) |>
-                    replace_na(0)) |>
+                    tidyr::replace_na(0)) |>
     dplyr::mutate(clock_start = Sys.Date() + 
              minutes(start_time_minutes) + hours(start_hour)) |>
     dplyr::mutate(clock_end = Sys.Date() + 

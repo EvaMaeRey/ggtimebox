@@ -121,7 +121,7 @@ compute_panel_timebox <- function(data, scales, break_time = 3, start_hour = 9){
     dplyr::mutate(full_time = .data$minutes + break_time) |>
     dplyr::mutate(end_time_minutes = cumsum(.data$full_time)) |>
     dplyr::mutate(start_time_minutes = lag(.data$end_time_minutes) |>
-                    replace_na(0)) |>
+                    tidyr::replace_na(0)) |>
     dplyr::mutate(clock_start = Sys.Date() + 
              minutes(start_time_minutes) + hours(start_hour)) |>
     dplyr::mutate(clock_end = Sys.Date() + 
@@ -289,11 +289,11 @@ ggplot(data = tasks_df) +
   stat_timebox(geom = "text", color = "grey30", 
                vjust = 1.2, hjust = -0.1, nudge_x = .5,
                lineheight = .7) + 
+  # stamp_currenttime() +
   stat_timebox(geom = "text", color = "grey30", 
                vjust = 1.2, hjust = 1.1,
                lineheight = .7, 
-               aes(label = after_stat(clock_hour_minute))) + 
-  stamp_currenttime()
+               aes(label = after_stat(clock_hour_minute))) 
 #> Warning in stat_timebox(geom = "text", color = "grey30", vjust = 1.2, hjust =
 #> -0.1, : Ignoring unknown parameters: `nudge_x`
 ```
@@ -303,7 +303,7 @@ ggplot(data = tasks_df) +
 ``` r
 
 last_plot() + 
-  coord_canvas(ratio = 1/60)
+  coord_canvas(ratio = 1/30)
 ```
 
 ![](README_files/figure-gfm/unnamed-chunk-10-2.png)<!-- -->
